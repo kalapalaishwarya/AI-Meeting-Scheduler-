@@ -1,0 +1,399 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Meeting Scheduler</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f1f4ff;
+    color: #202b48;
+}
+
+header {
+    background: linear-gradient(135deg, #202c70, #596df0);
+    color: white;
+    text-align: center;
+    padding: 30px 15px;
+}
+
+header h1 {
+    margin: 0 0 10px;
+}
+
+header p {
+    margin: 0;
+}
+
+.container {
+    max-width: 900px;
+    margin: 28px auto;
+    padding: 0 16px;
+}
+
+.card {
+    background: white;
+    padding: 24px;
+    margin-bottom: 22px;
+    border-radius: 14px;
+    box-shadow: 0 4px 18px #17255412;
+}
+
+h2 {
+    color: #3448b5;
+    margin-top: 0;
+}
+
+label {
+    display: block;
+    font-weight: bold;
+    margin: 14px 0 7px;
+}
+
+input[type="text"], select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cbd2e5;
+    border-radius: 7px;
+    font-size: 15px;
+}
+
+.participant {
+    background: #f8f9ff;
+    border: 1px solid #dce2f5;
+    padding: 15px;
+    margin-top: 16px;
+    border-radius: 10px;
+}
+
+.participant h3 {
+    margin-top: 0;
+}
+
+.slots {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.slots label {
+    font-weight: normal;
+    margin: 4px 0;
+}
+
+.slots input {
+    margin-right: 6px;
+}
+
+button {
+    background: #4257d5;
+    color: white;
+    border: none;
+    padding: 13px 18px;
+    margin-top: 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+button:hover {
+    background: #293da9;
+}
+
+.result {
+    margin-top: 16px;
+    padding: 16px;
+    border-radius: 9px;
+    background: #e9f9ef;
+    color: #17633a;
+}
+
+.error {
+    background: #fff0ef;
+    color: #b42318;
+    padding: 13px;
+    border-radius: 8px;
+}
+
+.info {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.info div {
+    background: white;
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.info h3 {
+    color: #3448b5;
+}
+
+footer {
+    text-align: center;
+    padding: 20px;
+    color: #667085;
+}
+
+@media (max-width: 600px) {
+    .info {
+        grid-template-columns: 1fr;
+    }
+
+    .slots {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>🤖 AI Meeting Scheduler</h1>
+    <p>Multi-Agent Negotiation Across Calendars</p>
+</header>
+
+<main class="container">
+
+    <section class="card">
+        <h2>📅 Schedule a Meeting</h2>
+
+        <label for="meetingName">Meeting Name</label>
+        <input type="text" id="meetingName"
+               placeholder="e.g. Project Discussion">
+
+        <label for="participantCount">Number of Participants</label>
+        <select id="participantCount">
+            <option value="2">2 Participants</option>
+            <option value="3">3 Participants</option>
+            <option value="4">4 Participants</option>
+            <option value="5">5 Participants</option>
+        </select>
+
+        <div id="participantForms"></div>
+
+        <button type="button" id="findButton">
+            🤝 Find Best Meeting Time
+        </button>
+    </section>
+
+    <section class="card">
+        <h2>🧠 Negotiation Results</h2>
+        <p id="status">Enter meeting details to begin.</p>
+        <div id="result"></div>
+    </section>
+
+    <section class="info">
+        <div>
+            <h3>👥 Multiple Agents</h3>
+            <p>Each participant has an agent that represents their availability.</p>
+        </div>
+        <div>
+            <h3>🤝 Negotiation</h3>
+            <p>The coordinator finds a time shared by all participants.</p>
+        </div>
+        <div>
+            <h3>✅ Confirmation</h3>
+            <p>Review the suggested time and confirm your demo meeting.</p>
+        </div>
+    </section>
+
+</main>
+
+<footer>
+    AI Meeting Scheduler | Mini Project
+</footer>
+
+<script>
+// Available time slots for this demonstration
+const timeSlots = [
+    "09:00 AM",
+    "10:00 AM",
+    "11:00 AM",
+    "02:00 PM",
+    "03:00 PM"
+];
+
+const participantCount =
+    document.getElementById("participantCount");
+
+const participantForms =
+    document.getElementById("participantForms");
+
+const statusText = document.getElementById("status");
+const result = document.getElementById("result");
+
+// Agent representing each participant
+class ParticipantAgent {
+    constructor(name, availableSlots) {
+        this.name = name;
+        this.availableSlots = availableSlots;
+    }
+}
+
+// Coordinator negotiates between participant agents
+class NegotiationCoordinator {
+    findCommonSlots(agents) {
+        if (agents.length === 0) return [];
+
+        return agents[0].availableSlots.filter(slot =>
+            agents.every(agent =>
+                agent.availableSlots.includes(slot)
+            )
+        );
+    }
+}
+
+// Create participant forms dynamically
+function createParticipantForms() {
+    participantForms.innerHTML = "";
+
+    const count = Number(participantCount.value);
+
+    for (let i = 1; i <= count; i++) {
+        const section = document.createElement("div");
+        section.className = "participant";
+
+        section.innerHTML = `
+            <h3>Participant ${i}</h3>
+
+            <label for="name${i}">Participant Name</label>
+            <input type="text" id="name${i}"
+                   placeholder="Enter participant name">
+
+            <label>Available Time Slots</label>
+
+            <div class="slots">
+                ${timeSlots.map(time => `
+                    <label>
+                        <input type="checkbox"
+                               name="slots${i}"
+                               value="${time}">
+                        ${time}
+                    </label>
+                `).join("")}
+            </div>
+        `;
+
+        participantForms.appendChild(section);
+    }
+}
+
+// Find the time that works for everyone
+function findMeetingTime() {
+    result.innerHTML = "";
+
+    const meetingName =
+        document.getElementById("meetingName").value.trim();
+
+    if (!meetingName) {
+        statusText.textContent = "Please enter a meeting name.";
+        result.innerHTML =
+            '<p class="error">Meeting name is required.</p>';
+        return;
+    }
+
+    const count = Number(participantCount.value);
+    const agents = [];
+
+    for (let i = 1; i <= count; i++) {
+        const name =
+            document.getElementById(`name${i}`).value.trim();
+
+        const checked = document.querySelectorAll(
+            `input[name="slots${i}"]:checked`
+        );
+
+        const slots = [...checked].map(input => input.value);
+
+        if (!name) {
+            statusText.textContent =
+                `Please enter a name for Participant ${i}.`;
+            return;
+        }
+
+        if (slots.length === 0) {
+            statusText.textContent =
+                `Please select availability for ${name}.`;
+            return;
+        }
+
+        agents.push(new ParticipantAgent(name, slots));
+    }
+
+    statusText.textContent = "Agents are negotiating...";
+
+    const coordinator = new NegotiationCoordinator();
+    const commonSlots = coordinator.findCommonSlots(agents);
+
+    if (commonSlots.length === 0) {
+        statusText.textContent = "No common time found.";
+
+        result.innerHTML = `
+            <p class="error">
+                No time is available for everyone.
+                Select more time slots for participants and try again.
+            </p>
+        `;
+        return;
+    }
+
+    statusText.textContent = "Negotiation completed!";
+
+    result.innerHTML = `
+        <div class="result">
+            <h3>🎉 Meeting Time Found!</h3>
+            <p><strong>Meeting:</strong> ${escapeHTML(meetingName)}</p>
+            <p><strong>Participants:</strong>
+                ${agents.map(a => escapeHTML(a.name)).join(", ")}
+            </p>
+            <p><strong>Recommended Time:</strong> ${commonSlots[0]}</p>
+            <p><strong>Other Common Times:</strong>
+                ${commonSlots.slice(1).join(", ") || "None"}
+            </p>
+            <button type="button" id="confirmButton">
+                Confirm Meeting
+            </button>
+            <p id="confirmation"></p>
+        </div>
+    `;
+
+    document.getElementById("confirmButton")
+        .addEventListener("click", () => {
+            document.getElementById("confirmation").textContent =
+                `Demo confirmed: ${meetingName} at ${commonSlots[0]}.`;
+        });
+}
+
+// Display user-entered text safely
+function escapeHTML(text) {
+    return text.replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[char]);
+}
+
+participantCount.addEventListener("change", createParticipantForms);
+document.getElementById("findButton")
+    .addEventListener("click", findMeetingTime);
+
+createParticipantForms();
+</script>
+
+</body>
+</html>
